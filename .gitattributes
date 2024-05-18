@@ -1,1 +1,2 @@
 face_trained.yml filter=lfs diff=lfs merge=lfs -text
+haar_face.xml filter=lfs diff=lfs merge=lfs -text
