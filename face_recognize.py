@@ -1,42 +1,36 @@
+# By: Landon Prince (5/18/2024)
+
 import os
 import cv2 as cv
+from utils import get_corresponding_color
 
-# path to the dataset directory
-DIR = r'C:\Users\owner\dataset'
 
-# list to store the names of people in the dataset
-people = [person for person in os.listdir(DIR)]
+def recognize_faces(img):
+    DIR = r'C:\Users\owner\dataset'
+    people = [person for person in os.listdir(DIR)]
 
-# load the Haar cascade for face detection
-haar_cascade = cv.CascadeClassifier('haar_face.xml')
+    haar_cascade = cv.CascadeClassifier('haar_face.xml')
 
-# create an LBPH Face Recognizer and load the trained model
-face_recognizer = cv.face.LBPHFaceRecognizer.create()
-face_recognizer.read('face_trained.yml')
+    face_recognizer = cv.face.LBPHFaceRecognizer.create()
+    face_recognizer.read('face_trained.yml')
 
-# load an image for face recognition
-img = cv.imread(r'C:\Users\owner\dataset\Aaron_Pena\Aaron_Pena_0001.jpg')
-gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
-cv.imshow('img', gray)
+    gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY)
 
-# Detect faces in the grayscale image
-faces_rect = haar_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+    faces_rect = haar_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=4)
+    for (x, y, w, h) in faces_rect:
+        faces_roi = gray[y:y + h, x:x + w]
 
-# Iterate over each detected face
-for (x, y, w, h) in faces_rect:
-    # Extract the Region of Interest (ROI) for each detected face
-    faces_roi = gray[y:y + h, x:x + w]
+        label, confidence = face_recognizer.predict(faces_roi)
+        color_code, text_color = get_corresponding_color(confidence)
+        reset_color = '\033[0m'
 
-    # Perform face recognition on the ROI
-    label, confidence = face_recognizer.predict(faces_roi)
-    print(f'label: {people[label]}, confidence: {confidence}')
+        print(f'label: {people[label]}, confidence: {color_code}{confidence:.2f}{reset_color}')
 
-    # Display the label of the recognized person on the image
-    cv.putText(img, str(people[label]), (20, 20), cv.FONT_HERSHEY_PLAIN,
-               1.0, (0, 255, 0), 2)
-    # Draw a rectangle around the detected face
-    cv.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        text = f'{people[label]}: {confidence:.2f}'
+        cv.putText(img, text, (x, y - 10), cv.FONT_HERSHEY_PLAIN, 1.0, text_color, 2)
 
-# Display the image with the detected faces
-cv.imshow('img', img)
-cv.waitKey(0)
+        cv.rectangle(img, (x, y), (x + w, y + h), text_color, 2)
+
+    cv.imshow('Detected Faces', img)
+    cv.waitKey(0)
+    cv.destroyAllWindows()
